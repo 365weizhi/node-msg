@@ -131,15 +131,22 @@ io.sockets.on('connection', function (socket) {
 			inc['new_2'] = 0;
 		}
 		db.chats.update({ id: id }, {$set: inc}, false, false);
+		
 		db.users.findOne({ id: data.fellow_id }, function(err, _data){
-			io.sockets.sockets[_data.socket_id].emit('chat-notice-response', {user_id: data.user_id, fellow_id: data.fellow_id});
+			if(_data)	//当用户在线的时候才发送信息
+				io.sockets.sockets[_data.socket_id].emit('chat-notice-response', {user_id: data.user_id, fellow_id: data.fellow_id});
 		});
 	});
-	
-	/**
-	 * 查看用户目前的消息状态
-	 * new 字段，表示有多少条未读信息
-	 */
+});
+
+function notice(user_id, fellow_id, new_n, rt_obj){
+	db.users.findOne({ id: fellow_id }, function(err, _data){
+		if(_data) {
+			io.sockets.sockets[_data.socket_id].emit('chat-notice-request', { from: user_id, new_n:new_n , message: rt_obj});
+		}
+	});
+}
+/*
 	socket.on('chat-status-request', function(data){
 		db.chats.find({user_id:"2", new: {$gt: 0}}, {new:''}).toArray(function(err, data){
 			var num = 0;
@@ -152,21 +159,6 @@ io.sockets.on('connection', function (socket) {
 			});
 		});
 	});
-});
-
-function notice(user_id, fellow_id, new_n, rt_obj){
-	db.users.findOne({ id: fellow_id }, function(err, _data){
-		if(_data) {
-			io.sockets.sockets[_data.socket_id].emit('chat-notice-request', { from: user_id, new_n:new_n , message: rt_obj});
-			//console.log(_data.socket_id);
-			//console.log(io.sockets.sockets[_data.socket_id]);
-			//console.log(io.sockets.client[_data.socket_id]);
-			//io.sockets[_data.socket_id].emit('chat-notice-request', { from: user_id, new_n:new_n });
-		}
-	});
-}
-/*
-
 db.chats.findOne({ id: "3&4" }, { content: {$slice: 3}},
 	function (err, _data) {
 		for(var row in _data.content){
